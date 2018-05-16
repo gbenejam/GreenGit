@@ -32,6 +32,7 @@ will be considered as if they were '*'.
 
 import subprocess
 import sys
+import os
 
 
 # Global variables
@@ -51,7 +52,14 @@ def get_command_line_options():
     Sets the respective global variables number_of_commits and cron_expression with the values
     read from the command line.
     '''
-    pass
+    global number_of_commits, cron_expression
+    
+    # Get the number_of_commits parameter if exists
+    if len(sys.argv) > 1:
+        number_of_commits = sys.argv[1];
+        
+    # Get the cron_expression object
+    cron_expression = CronExpression(sys.argv[2:])
 
 def set_cron_job():
     '''
@@ -65,7 +73,40 @@ class CronExpression():
     crontab expression is listed in the object as a separate parameter and the __str__ method
     returns the resulting crontab expression.
     '''
-    pass
+
+    def __init__(self, parameter_list):
+        '''
+        Initializes a CronExpression object with the parameters passed as argument.
+        parameter_list is a list of parameters in the same order as expected for the crontab
+        command. Those parameters that are not specified in the list will be considered as '*'.
+        '''
+        # number of commits to be done
+        self.commits_number = __get_parameter__(1, parameter_list)
+        # get cron parameters
+        self.minute = __get_parameter__(2, parameter_list)
+        self.hour = __get_parameter__(3, parameter_list)
+        self.month_day = __get_parameter__(4, parameter_list)
+        self.month = __get_parameter__(5, parameter_list)
+        self.week_day = __get_parameter__(6, parameter_list)
+        # path of the script
+        self.script_path = os.path.realpath(__file__)
+
+    def __str__(self):
+        return f'{self.minute} {self.hour} {self.month_day} {self.month} {self.week_day} '\
+            + f'python3 {self.script_path}'
+
+    @staticmethod
+    def __get_parameter__(parameter_number, parameter_list):
+        '''
+        Private static method.
+        Given a list (parameter_list), returns the object at position 'parameter_number'. 
+        It makes sure that if the index is out of bounds it won't give any error and will
+        return '*'.
+        '''
+        if parameter_number >= len(parameter_list):
+            return '*'
+
+        return parameter_list[parameter_number]
 
 
 # Functions to check if the push is needed
@@ -82,6 +123,7 @@ def number_of_commits_today():
     Checks the number of commits that has been done today.
     @return the number of commits done today.
     '''
+    pass
 
 def is_push_needed():
     '''
@@ -125,7 +167,11 @@ def execute_script():
     Then it takes care of getting all the information needed from git commands and of
     pushing to the remote repository the specified number of commits.
     '''
-    pass
+
+    get_command_line_options()
+    print(number_of_commits)
+    if cron_expression == None:
+        print('No cron expression was assigned to cron_expression global variable')
 
 
 # Script start
