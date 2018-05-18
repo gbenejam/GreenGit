@@ -35,78 +35,128 @@ import sys
 import os
 
 
-# Global variables
+# Classes to set and use the different command line options
 
-number_of_commits = 1
-cron_expression = None
-
-
-# Functions to set and use the different command line options
-
-def get_command_line_options():
+class CommandLineParameters():
     '''
-    Gets the number of commits variable (defaults to 1).
-    If available also gets the crontab expression to be able to create a cron job to run
-    periodically this script. If there is no variables for the cron expression then there is
-    no cron job scheduled.
-    Sets the respective global variables number_of_commits and cron_expression with the values
-    read from the command line.
+    Class to create objects that represent the command line options. Each command line parameter
+    is listed in the object as a separate parameter and the __str__ method returns the command
+    entered to the command line.
     '''
-    global number_of_commits, cron_expression
-    
-    # Get the number_of_commits parameter if exists
-    if len(sys.argv) > 1:
-        number_of_commits = sys.argv[1];
-        
-    # Get the cron_expression object
-    cron_expression = CronExpression(sys.argv[2:])
-
-def set_cron_job():
-    '''
-    Create cron schedule task from the cron_exrpession global object.
-    '''
-    pass
-
-class CronExpression():
-    '''
-    Class to create objects that represent a crontab expression. Each different parameter of a
-    crontab expression is listed in the object as a separate parameter and the __str__ method
-    returns the resulting crontab expression.
-    '''
+    cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} {5} {6}") | crontab -'
 
     def __init__(self, parameter_list):
         '''
-        Initializes a CronExpression object with the parameters passed as argument.
-        parameter_list is a list of parameters in the same order as expected for the crontab
-        command. Those parameters that are not specified in the list will be considered as '*'.
+        Initializes the object with the parameters passed as argument.
+        parameter_list is the list of parameters received through the command line execution.
+        Those optional parameters that are not specified in the list will be initialized with a
+        default value if needed.
         '''
         # number of commits to be done
         self.commits_number = __get_parameter__(1, parameter_list)
+        
         # get cron parameters
         self.minute = __get_parameter__(2, parameter_list)
         self.hour = __get_parameter__(3, parameter_list)
         self.month_day = __get_parameter__(4, parameter_list)
         self.month = __get_parameter__(5, parameter_list)
         self.week_day = __get_parameter__(6, parameter_list)
+
+        # boolean to know if cron expression needs to be executed or not
+        self.execute_cron = parameter_list > 2
+
         # path of the script
         self.script_path = os.path.realpath(__file__)
 
     def __str__(self):
-        return f'{self.minute} {self.hour} {self.month_day} {self.month} {self.week_day} '\
-            + f'python3 {self.script_path}'
+        '''
+        String representation of the command executed.
+        '''
+        return f'python3 {self.script_path} {self.commits_number} {self.minute} {self.hour} '\
+            + f'{self.month_day} {self.month} {self.week_day}'
 
     @staticmethod
     def __get_parameter__(parameter_number, parameter_list):
         '''
         Private static method.
         Given a list (parameter_list), returns the object at position 'parameter_number'. 
-        It makes sure that if the index is out of bounds it won't give any error and will
-        return '*'.
+        It makes sure that if the index is out of bounds the object returned will be properly
+        default initialized.
+
+        commits_number is default initialized to 1.
+        Not specified cron parameters (minute, hour, ...) are initialized to '*'.
         '''
         if parameter_number >= len(parameter_list):
-            return '*'
+            # there is no parameter set and we need to initialize it
+            if parameter_number == 1:
+                return 1
+            else:
+                return '*'
 
         return parameter_list[parameter_number]
+
+    def get_cron_expression():
+        return CommandLineParameters.cron_expression.format(
+            self.minute, self.hour, self.month_day, self.month, self.week_day,
+            self.script_path, self.commits_number)
+
+
+class CommandExecutor():
+    '''
+    This class encapsulates the execution of all the available commands for this script.
+    It provides a list with the commands that are possible to execute. 
+    '''
+    CONST_COMMANDS = {
+        'cron': __get_cron_command_list__
+    }
+
+    ERROR_CODES = {
+        -2: 'Command does not exist'
+        -1: 'Unknown error'
+    }
+
+    def __init__(self):
+        '''
+        Nothing to do here. This class is just a wrapper for some methods.
+        '''
+        pass
+
+    def execute(self, command, command_generator):
+        '''
+        This method gets the command to execute and runs it.
+        command specifies the function to be used (found in CONST_COMMANDS) to get the
+        expression that needs to be executed.
+        command_generator is an optional object that can be passed and may be used by
+        the function to generate the command to be run.
+        '''
+        try:
+            command_list = CONST_COMMANDS[command](command_generator)
+        except KeyError:
+            # Print the error and return negative number meaning failure of execution
+            print('CommandExecutor - Unrecognized command')
+            return -2
+        except Exception as error:
+            print('Exception: ' + repr(error)) 
+            return -1
+
+        # If we arrive here it means that command_list is initialized
+        result = subprocess.run(command_list, shell=True)
+        # To be able to read the output add stdout=subprocess.PIPE to the run call.
+        # To read the result output execute: result.stdout.decode('utf-8')
+        return result.returncode
+
+    @staticmethod
+    def __get_cron_command_list__(command_generator):
+        '''
+        This is the function used to generate the cron expression to be run to schedule
+        the the execution of this script.
+        command_generator is an object of type CommandLineParameters, which can return a
+        valid cron expression.
+        '''
+        try:
+            return command_generator.get_cron_expression()
+        except:
+            raise Exception('CommandExecutor - Could not get cron expression')
 
 
 # Functions to check if the push is needed
@@ -168,8 +218,9 @@ def execute_script():
     pushing to the remote repository the specified number of commits.
     '''
 
-    get_command_line_options()
-    print(number_of_commits)
+    # get command line options and create CommandLineParameters object
+    script_options = CommandLineParameters(sys.argv)
+
     if cron_expression == None:
         print('No cron expression was assigned to cron_expression global variable')
 
