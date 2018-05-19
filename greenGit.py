@@ -31,7 +31,6 @@ will be considered as if they were '*'.
 
 # Imports
 
-import subprocess
 import sys
 import os
 
@@ -41,30 +40,46 @@ import commandExecutor
 import commandLineInterpreter
 
 
+# Global const variables
+
+CONST_COMMANDS = {
+    'git-is-repo': 'git rev-parse --is-inside-work-tree'
+    'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00'
+    'git-branch-name': 'git rev-parse --abbrev-ref HEAD'
+}
+
+    
 # Functions to check if the push is needed
 
-def has_git_subfolder():
+def is_git_repo(command_executer):
     '''
-    Checks if the path where the script is being executed contains also a .git subfolder.
-    @return true if there is the .git subfolder and false otherwise.
+    Checks if the cwd of the command_executer object is inside a git repository.
+    @return true if it is a git repository and false otherwise.
     '''
-    pass
+    result = command_executer.execute(CONST_COMMANDS['git-is-repo'])
+    result = result.lower()
+    return result == 'true'
 
-def number_of_commits_today():
+def number_of_lines(output_text):
     '''
-    Checks the number of commits that has been done today.
-    @return the number of commits done today.
+    Count the number of lines in the string passed as parameter.
+    @return number of lines in output_text
     '''
-    pass
+    return len(output_text.split('\n'))
 
-def is_push_needed():
+def is_push_needed(command_executer, commits_num, branch):
     '''
-    Checks if the number of commits for today hasn't still been done and if the folder
-    where the script is being executed has a .git subfolder in it.
-    @return true if there is a .git subfolder and the number of commits done today is
-    less than number-of-commits, and false otherwise.
+    Checks if the number of commits for today hasn't still been done.
+    PRECONDITION: the command_executer.cwd is a directory with a git repository.
+    branch is the name of the current branch in the project.
+    @return true if the number of commits done today is less than commits_num and 
+    false otherwise.
     '''
-    pass
+    # get the number of commits pushed today
+    commits_pushed_command = CONST_COMMANDS['git-remote-today-log'].format(branch)
+    commits_pushed_today = command_executer.execute(commits_pushed_command, number_of_lines)
+    # compare the commits pushed today to the number of commits needed
+    return commits_pushed_today > commits_num
 
 
 # Functions to execute git commands
@@ -73,7 +88,7 @@ def get_current_branch():
     '''
     This function returns the name of the current branch of the repository.
     '''
-    pass
+    return command_executer.execute(CONST_COMMANDS['git-branch-name'])
 
 def get_commit_to_push():
     '''
@@ -102,14 +117,18 @@ def execute_script():
 
     # get command line options and create CommandLineInterpreter object
     script_options = CommandLineInterpreter(sys.argv)
+    # initialize CommandExecuter with the project directory as cwd
+    command_executer = CommandExecuter(script_options.project_path)
 
     if script_options.execute_cron:
-        command_executer.execute('cron', script_options)
+        command_executer.execute(script_options.get_cron_expression)
 
-    # if there are commits and we still haven't commit all script_options.commits_number
-    # and if we are in a directory with .git folder, then push the commits
-    if is_push_needed(command_executer, script_options.commits_number):
-        push_commits(command_executer, script_options.commits_number)
+    if is_git_repo(command_executer):
+        # get the current branch of the project
+        branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
+    
+        if is_push_needed(command_executer, script_options.commits_number):
+            push_commits(command_executer, script_options.commits_number)
 
 
 # Script start
@@ -129,4 +148,12 @@ if __name__ == '__main__':
 # check if there are commits available to be pushed
 # get the branch and SHA of commit that has to be pushed
 # push the first unpushed commit once we have its SHA: git push <remotename> <commit SHA>:<remotebranchname>
+
+'''
+Old way of checking git repository... not entirely accurate.
+
+    full_path = project_path + '/' if project_path[-1] != '/' else ''
+    full_path += '.git'
+    return os.path.isdir(full_path)
+'''
 
