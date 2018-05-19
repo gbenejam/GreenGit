@@ -46,6 +46,7 @@ CONST_COMMANDS = {
     'git-is-repo': 'git rev-parse --is-inside-work-tree'
     'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00'
     'git-branch-name': 'git rev-parse --abbrev-ref HEAD'
+    'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse'
 }
 
     
@@ -90,12 +91,27 @@ def get_current_branch():
     '''
     return command_executer.execute(CONST_COMMANDS['git-branch-name'])
 
-def get_commit_to_push():
+def get_commit_to_push(command_executer, commits_num):
     '''
     Function that, checking the number_of_commits needed, picks a commit SHA from the
     results of the corresponding git log command.
     '''
-    pass
+    result = command_executer.execute(CONST_COMMANDS['get-unpushed-commits'])
+    commits = result.split('\n')
+    
+    if commits_num < len(commits):
+        chosen_commit = commits[commits_num]
+    else:
+        chosen_commit = commits[-1]
+
+    try:
+        # get the sha of the commit
+        sha = chosen_commit[0:chosen_commit.index(' ')]
+    except ValueError:
+        print('Error trying to get the SHA of the commit to be pushed')
+        raise Exception('Abort program')
+
+    return sha
 
 def push_commits():
     '''
