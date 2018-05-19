@@ -11,7 +11,7 @@ There are two ways to execute this:
 
 To execute it just once go to the folder of the project you want to push (the one
 with the .git folder) and run:
-python3 greenGit.py [number-of-commits [crontab-expression]]
+python3 greenGit.py project-base-folder [number-of-commits [crontab-expression]]
 
 To execute it automatically each period of time you need to add it to crontab.
 With this method you can forget about pushing to GitHub and the script will push
@@ -20,7 +20,7 @@ so that the commit map appears completely green.
 
 To add the execution of the script to the crontab you need to call this script with
 the parameters that you would pass to create the cron scheduling. This is:
-    python3 greenGit.py number-of-commits min hour day-of-month month day-of-week
+    python3 greenGit.py project-folder number-of-commits min hour day-of-month month day-of-week
 
 The parameters are received in order, so all the previous parameters are mandatory
 in case you want to set a specific one. The parameters not set for the crontab-expression
@@ -52,27 +52,27 @@ class CommandLineParameters():
         Those optional parameters that are not specified in the list will be initialized with a
         default value if needed.
         '''
+        # path of the script
+        self.project_path = __get_parameter__(1, parameter_list)
+        
         # number of commits to be done
-        self.commits_number = __get_parameter__(1, parameter_list)
+        self.commits_number = __get_parameter__(2, parameter_list)
         
         # get cron parameters
-        self.minute = __get_parameter__(2, parameter_list)
-        self.hour = __get_parameter__(3, parameter_list)
-        self.month_day = __get_parameter__(4, parameter_list)
-        self.month = __get_parameter__(5, parameter_list)
-        self.week_day = __get_parameter__(6, parameter_list)
+        self.minute = __get_parameter__(3, parameter_list)
+        self.hour = __get_parameter__(4, parameter_list)
+        self.month_day = __get_parameter__(5, parameter_list)
+        self.month = __get_parameter__(6, parameter_list)
+        self.week_day = __get_parameter__(7, parameter_list)
 
         # boolean to know if cron expression needs to be executed or not
-        self.execute_cron = parameter_list > 2
-
-        # path of the script
-        self.script_path = os.path.realpath(__file__)
+        self.execute_cron = parameter_list > 3
 
     def __str__(self):
         '''
         String representation of the command executed.
         '''
-        return f'python3 {self.script_path} {self.commits_number} {self.minute} {self.hour} '\
+        return f'python3 {self.project_path} {self.commits_number} {self.minute} {self.hour} '\
             + f'{self.month_day} {self.month} {self.week_day}'
 
     @staticmethod
@@ -89,6 +89,8 @@ class CommandLineParameters():
         if parameter_number >= len(parameter_list):
             # there is no parameter set and we need to initialize it
             if parameter_number == 1:
+                return '.'
+            elif parameter_number == 2:
                 return 1
             else:
                 return '*'
@@ -98,7 +100,7 @@ class CommandLineParameters():
     def get_cron_expression():
         return CommandLineParameters.cron_expression.format(
             self.minute, self.hour, self.month_day, self.month, self.week_day,
-            self.script_path, self.commits_number)
+            self.project_path, self.commits_number)
 
 
 class CommandExecutor():
@@ -107,6 +109,7 @@ class CommandExecutor():
     It provides a list with the commands that are possible to execute. 
     '''
     CONST_COMMANDS = {
+        'cd' : __go_to_folder__
         'cron': __get_cron_command_list__
     }
 
@@ -200,7 +203,7 @@ def get_commit_to_push():
     '''
     pass
 
-def push_commit():
+def push_commits():
     '''
     Function that executes the pushing of number_of_commits (if available) to the remote
     repository.
@@ -220,9 +223,15 @@ def execute_script():
 
     # get command line options and create CommandLineParameters object
     script_options = CommandLineParameters(sys.argv)
+    command_executer = CommandExecutor()
 
-    if cron_expression == None:
-        print('No cron expression was assigned to cron_expression global variable')
+    if script_options.execute_cron:
+        command_executer.execute('cron', script_options)
+
+    # if there are commits and we still haven't commit all script_options.commits_number
+    # and if we are in a directory with .git folder, then push the commits
+    if is_push_needed(command_executer, script_options.commits_number):
+        push_commits(command_executer, script_options.commits_number)
 
 
 # Script start
