@@ -51,10 +51,20 @@ class CommandExecuter():
             return -1
 
         # If we arrive here it means that command_to_execute is initialized
+        command_to_execute = __shell_injection_prevention__(command_to_execute)
         result = subprocess.run(command_to_execute, shell=True)
         # To be able to read the output add stdout=subprocess.PIPE to the run call.
         # To read the result output execute: result.stdout.decode('utf-8')
         return result.returncode
+
+    @staticmethod
+    def __shell_injection_prevention__(command):
+        '''
+        This method prevents shell injection by scaping the quotes characters.
+        Use single quotes, and put single quotes into double quotes.
+        The string $'b is then quoted as '$'"'"'b'.
+        '''
+        return "'" + s.replace("'", "'\"'\"'") + "'"
 
     @staticmethod
     def __go_to_folder__(command_generator):
