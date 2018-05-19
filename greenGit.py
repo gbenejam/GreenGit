@@ -47,6 +47,7 @@ CONST_COMMANDS = {
     'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00'
     'git-branch-name': 'git rev-parse --abbrev-ref HEAD'
     'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse'
+    'git-push': 'git push origin {sha}:origin/{branch}'
 }
 
     
@@ -85,12 +86,6 @@ def is_push_needed(command_executer, commits_num, branch):
 
 # Functions to execute git commands
 
-def get_current_branch():
-    '''
-    This function returns the name of the current branch of the repository.
-    '''
-    return command_executer.execute(CONST_COMMANDS['git-branch-name'])
-
 def get_commit_to_push(command_executer, commits_num):
     '''
     Function that, checking the number_of_commits needed, picks a commit SHA from the
@@ -113,12 +108,14 @@ def get_commit_to_push(command_executer, commits_num):
 
     return sha
 
-def push_commits():
+def push_commits(command_executer, commits_num, branch_name):
     '''
     Function that executes the pushing of number_of_commits (if available) to the remote
     repository.
     '''
-    pass
+    commit_sha = get_commit_to_push(command_executer, commits_num)
+    command = CONST_COMMANDS['git-push'].format(sha=commit_sha, branch=branch_name)
+    command_executer.execute(command)
 
 
 # Main method
@@ -144,7 +141,7 @@ def execute_script():
         branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
     
         if is_push_needed(command_executer, script_options.commits_number):
-            push_commits(command_executer, script_options.commits_number)
+            push_commits(command_executer, script_options.commits_number, branch)
 
 
 # Script start
