@@ -1,31 +1,6 @@
 '''
 This script pushes just the first unpushed commit to origin.
 It can also be configured to make the pushes automatically at a given time.
-
-README
-
-To use this software you need python version 3.5 at least installed in your computer.
-There are two ways to execute this:
-1. With a normal script execution.
-2. With crontab so that it executes automatically.
-
-To execute it just once go to the folder of the project you want to push (the one
-with the .git folder) and run:
-python3 greenGit.py project-base-folder [number-of-commits [crontab-expression]]
-
-To execute it automatically each period of time you need to add it to crontab.
-With this method you can forget about pushing to GitHub and the script will push
-each day just the number of commits passed by parameter to the script (by default 1),
-so that the commit map appears completely green.
-
-To add the execution of the script to the crontab you need to call this script with
-the parameters that you would pass to create the cron scheduling. This is:
-    python3 greenGit.py project-folder number-of-commits min hour day-of-month month day-of-week
-
-The parameters are received in order, so all the previous parameters are mandatory
-in case you want to set a specific one. The parameters not set for the crontab-expression
-will be considered as if they were '*'.
-
 '''
 
 
@@ -36,19 +11,27 @@ import os
 
 # Custom package imports
 
-import commandExecutor
-import commandLineInterpreter
+from commandExecuter import CommandExecuter
+from commandLineInterpreter import CommandLineInterpreter
 
 
 # Global const variables
 
 CONST_COMMANDS = {
-    'git-is-repo': 'git rev-parse --is-inside-work-tree'
-    'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00'
-    'git-branch-name': 'git rev-parse --abbrev-ref HEAD'
-    'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse'
-    'git-push': 'git push origin {sha}:origin/{branch}'
+    # git commands
+    'git-is-repo': 'git rev-parse --is-inside-work-tree',
+    'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00',
+    'git-branch-name': 'git rev-parse --abbrev-ref HEAD',
+    'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse',
+    'git-push': 'git push origin {sha}:{branch}'
+    'git-change-dates': 'git filter-branch --env-filter \'if'
+    # general bash commands
+    'get-date': 'date -R'
 }
+
+CHANGE_DATE_COMMAND = 'git filter-branch --env-filter ' + \
+    '\'if '
+
 
     
 # Functions to check if the push is needed
@@ -81,7 +64,7 @@ def is_push_needed(command_executer, commits_num, branch):
     commits_pushed_command = CONST_COMMANDS['git-remote-today-log'].format(branch)
     commits_pushed_today = command_executer.execute(commits_pushed_command, number_of_lines)
     # compare the commits pushed today to the number of commits needed
-    return commits_pushed_today > commits_num
+    return commits_pushed_today < commits_num
 
 
 # Functions to execute git commands
@@ -118,6 +101,26 @@ def push_commits(command_executer, commits_num, branch_name):
     command_executer.execute(command)
 
 
+def change_commit_dates(command_executer):
+    '''
+    This function gets all the unpushed commits and changes their date to the actual one.
+    This is needed so that GitHub paints the green commit in today's day (it paints the
+    box based on commit's date instead of push date).
+    '''
+    sha_list = []
+    result = command_executer.execute(CONST_COMMANDS['get-unpushed-commits'])
+    for line in result.split('\n'):
+        try:
+            # get just the commit's SHA
+            sha_list.append(line[0:chosen_commit.index(' ')])
+        except ValueError:
+            print('Error trying to get the SHA of a commit')
+            raise Exception('Abort program')
+
+    # insert the list of commits in the command that changes their date and run it
+    
+
+
 # Main method
 
 def execute_script():
@@ -131,42 +134,32 @@ def execute_script():
     # get command line options and create CommandLineInterpreter object
     script_options = CommandLineInterpreter(sys.argv)
     # initialize CommandExecuter with the project directory as cwd
-    command_executer = CommandExecuter(script_options.project_path)
+    command_executer = CommandExecuter(script_options.project_path, True)
 
     if script_options.execute_cron:
-        command_executer.execute(script_options.get_cron_expression)
+        # command_executer.execute(script_options.get_cron_expression)
+        print('Execute cron: {}'.format(script_options.get_cron_expression))
+        pass
 
     if is_git_repo(command_executer):
         # get the current branch of the project
         branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
     
-        if is_push_needed(command_executer, script_options.commits_number):
-            push_commits(command_executer, script_options.commits_number, branch)
+        if is_push_needed(command_executer, script_options.commits_number, branch):
+            '''
+            GitHub paints the colors in the calendar of commits based on the date of the
+            commit, so we need to change the date of the commits that are going to be
+            pushed (and the rest that come after) to today.
+            Each push will do this, so every commit goes into a different box in the
+            calendar.
+            '''
+            # get_date_command = CONST_COMMANDS['git-date']
+            # push_commits(command_executer, script_options.commits_number, branch)
+            print('Do push')
 
 
 # Script start
 
 if __name__ == '__main__':
     execute_script()
-
-
-# NOTES
-
-# check if the folder has a .git subfolder
-# check if the number of commits published today equals to the number of commits passed as parameter
-# To do this check the log of the remote repository and check the date for today
-
-# if both previous conditions are true then execute the next commands
-# get the unpushed commits in chronological order: git log @{u}..HEAD --format=oneline --reverse
-# check if there are commits available to be pushed
-# get the branch and SHA of commit that has to be pushed
-# push the first unpushed commit once we have its SHA: git push <remotename> <commit SHA>:<remotebranchname>
-
-'''
-Old way of checking git repository... not entirely accurate.
-
-    full_path = project_path + '/' if project_path[-1] != '/' else ''
-    full_path += '.git'
-    return os.path.isdir(full_path)
-'''
 

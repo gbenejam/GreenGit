@@ -7,6 +7,28 @@ passed to the greenGit.py script.
 green_git_usage_str = ''
 
 
+def __get_parameter__(parameter_number, parameter_list):
+    '''
+    Given a list (parameter_list), returns the object at position 'parameter_number'. 
+    It makes sure that if the index is out of bounds the object returned will be properly
+    default initialized.
+
+    commits_number is default initialized to 1.
+    Not specified cron parameters (minute, hour, ...) are initialized to '*'.
+    '''
+    if parameter_number >= len(parameter_list):
+        # there is no parameter set and we need to initialize it
+        if parameter_number == 1:
+            return '.'
+        elif parameter_number == 2:
+            return 1
+        else:
+            return '*'
+
+    return parameter_list[parameter_number]
+
+
+
 class CommandLineInterpreter():
     '''
     Class to create objects that represent the command line options. Each command line parameter
@@ -36,7 +58,7 @@ class CommandLineInterpreter():
         self.week_day = __get_parameter__(7, parameter_list)
 
         # boolean to know if cron expression needs to be executed or not
-        self.execute_cron = parameter_list > 3
+        self.execute_cron = len(parameter_list) > 3
 
     def __str__(self):
         '''
@@ -45,29 +67,7 @@ class CommandLineInterpreter():
         return f'python3 {self.project_path} {self.commits_number} {self.minute} {self.hour} '\
             + f'{self.month_day} {self.month} {self.week_day}'
 
-    @staticmethod
-    def __get_parameter__(parameter_number, parameter_list):
-        '''
-        Private static method.
-        Given a list (parameter_list), returns the object at position 'parameter_number'. 
-        It makes sure that if the index is out of bounds the object returned will be properly
-        default initialized.
-
-        commits_number is default initialized to 1.
-        Not specified cron parameters (minute, hour, ...) are initialized to '*'.
-        '''
-        if parameter_number >= len(parameter_list):
-            # there is no parameter set and we need to initialize it
-            if parameter_number == 1:
-                return '.'
-            elif parameter_number == 2:
-                return 1
-            else:
-                return '*'
-
-        return parameter_list[parameter_number]
-
-    def get_cron_expression():
+    def get_cron_expression(self):
         return CommandLineInterpreter.cron_expression.format(
             self.minute, self.hour, self.month_day, self.month, self.week_day,
             self.project_path, self.commits_number)
