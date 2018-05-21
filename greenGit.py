@@ -20,18 +20,18 @@ from commandLineInterpreter import CommandLineInterpreter
 CONST_COMMANDS = {
     # git commands
     'git-is-repo': 'git rev-parse --is-inside-work-tree',
+    'git-origin-head-sha': 'git log origin/{} -1 --format=oneline',
     'git-remote-today-log': 'git log origin/{} --format=oneline --since=00:00',
     'git-branch-name': 'git rev-parse --abbrev-ref HEAD',
     'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse',
-    'git-push': 'git push origin {sha}:{branch}'
-    'git-change-dates': 'git filter-branch --env-filter \'if'
+    'git-push': 'git push origin {sha}:{branch}',
+    'git-change-dates': 'git filter-branch --env-filter ',
     # general bash commands
     'get-date': 'date -R'
 }
 
-CHANGE_DATE_COMMAND = 'git filter-branch --env-filter ' + \
-    '\'if '
-
+BASH_ENV_FILTER = '\'export GIT_AUTHOR_DATE="{date}"\n' \
+    + 'export GIT_COMMITTER_DATE="{date}"\' -- {origin_head}..HEAD'
 
     
 # Functions to check if the push is needed
@@ -45,12 +45,30 @@ def is_git_repo(command_executer):
     result = result.lower()
     return result == 'true'
 
-def number_of_lines(output_text):
+def get_number_of_lines(output_text):
     '''
     Count the number of lines in the string passed as parameter.
     @return number of lines in output_text
     '''
-    return len(output_text.split('\n'))
+    lines_list = output_text.split('\n')
+    # remove empty elements
+    lines_list = [line for line in lines_list if line]
+    return len(lines_list)
+
+def get_sha(text_line):
+    '''
+    Given a git log formatted line (--format=oneline), return the commit SHA from it.
+    @return commit SHA of text_line
+    '''
+    try:
+        # get the sha of the commit
+        sha = text_line[0:text_line.index(' ')]
+    except ValueError:
+        print('Error trying to get the SHA of:')
+        print(text_line)
+        raise Exception('Abort program')
+
+    return sha
 
 def is_push_needed(command_executer, commits_num, branch):
     '''
@@ -62,12 +80,16 @@ def is_push_needed(command_executer, commits_num, branch):
     '''
     # get the number of commits pushed today
     commits_pushed_command = CONST_COMMANDS['git-remote-today-log'].format(branch)
-    commits_pushed_today = command_executer.execute(commits_pushed_command, number_of_lines)
+    commits_pushed_today = command_executer.execute(commits_pushed_command, get_number_of_lines)
     # compare the commits pushed today to the number of commits needed
     return commits_pushed_today < commits_num
 
 
 # Functions to execute git commands
+
+def get_origin_head_sha(command_executer, branch):
+    formatted_command = CONST_COMMANDS['git-origin-head-sha'].format(branch)
+    return command_executer.execute(formatted_command, get_sha)
 
 def get_commit_to_push(command_executer, commits_num):
     '''
@@ -82,14 +104,7 @@ def get_commit_to_push(command_executer, commits_num):
     else:
         chosen_commit = commits[-1]
 
-    try:
-        # get the sha of the commit
-        sha = chosen_commit[0:chosen_commit.index(' ')]
-    except ValueError:
-        print('Error trying to get the SHA of the commit to be pushed')
-        raise Exception('Abort program')
-
-    return sha
+    return get_sha(chosen_commit)
 
 def push_commits(command_executer, commits_num, branch_name):
     '''
@@ -107,18 +122,7 @@ def change_commit_dates(command_executer):
     This is needed so that GitHub paints the green commit in today's day (it paints the
     box based on commit's date instead of push date).
     '''
-    sha_list = []
-    result = command_executer.execute(CONST_COMMANDS['get-unpushed-commits'])
-    for line in result.split('\n'):
-        try:
-            # get just the commit's SHA
-            sha_list.append(line[0:chosen_commit.index(' ')])
-        except ValueError:
-            print('Error trying to get the SHA of a commit')
-            raise Exception('Abort program')
-
-    # insert the list of commits in the command that changes their date and run it
-    
+    pass
 
 
 # Main method
@@ -139,12 +143,11 @@ def execute_script():
     if script_options.execute_cron:
         # command_executer.execute(script_options.get_cron_expression)
         print('Execute cron: {}'.format(script_options.get_cron_expression))
-        pass
 
     if is_git_repo(command_executer):
         # get the current branch of the project
         branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
-    
+
         if is_push_needed(command_executer, script_options.commits_number, branch):
             '''
             GitHub paints the colors in the calendar of commits based on the date of the

@@ -51,9 +51,10 @@ class CommandExecuter():
         output = result.stdout.decode('utf-8')
         # Trim last end of line
         output = output.rstrip()
-        self.log(output)
-        
-        if type(callback) == 'function':
+        self.log('  ' + output)
+
+        if type(callback).__name__ == 'function':
+            self.log('Executing callback function: {}'.format(callback.__name__))
             return callback(output)
         else:
             return output

@@ -13,6 +13,7 @@ def __get_parameter__(parameter_number, parameter_list):
     It makes sure that if the index is out of bounds the object returned will be properly
     default initialized.
 
+    project_path is default initialized to '.'.
     commits_number is default initialized to 1.
     Not specified cron parameters (minute, hour, ...) are initialized to '*'.
     '''
@@ -48,7 +49,11 @@ class CommandLineInterpreter():
         self.project_path = __get_parameter__(1, parameter_list)
         
         # number of commits to be done
-        self.commits_number = __get_parameter__(2, parameter_list)
+        try:
+            self.commits_number = int(__get_parameter__(2, parameter_list))
+        except:
+            print('Error parsing int')
+            raise Exception('Abort program')
         
         # get cron parameters
         self.minute = __get_parameter__(3, parameter_list)
