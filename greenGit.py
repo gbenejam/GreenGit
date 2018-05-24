@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 '''
 This script pushes just the first unpushed commit to origin.
 It can also be configured to make the pushes automatically at a given time.
@@ -162,6 +164,8 @@ def execute_script():
     command_executer = CommandExecuter(script_options.project_path, True)
 
     if script_options.execute_cron:
+        print('WARNING: To use cron feature you need to leave the computer on.')
+        print('You also need to have the SSH feature enabled to access the remote repository')
         # command_executer.execute(script_options.get_cron_expression)
         print('Execute cron: {}'.format(script_options.get_cron_expression))
 
