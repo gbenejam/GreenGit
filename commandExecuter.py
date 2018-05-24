@@ -6,15 +6,6 @@ This script contains the wrapper object to allow greenGit.py to execute terminal
 
 import subprocess
 
-
-def __shell_injection_prevention__(command):
-    '''
-    This method prevents shell injection by scaping the quotes characters.
-    Use single quotes, and put single quotes into double quotes.
-    The string $'b is then quoted as $'"'"'b.
-    '''
-    return command.replace("'", "'\"'\"'")
-
     
 class CommandExecuter():
     '''
@@ -42,7 +33,6 @@ class CommandExecuter():
         This method gets the command to execute and runs it.
         @return the returncode of the command or the result of the callback if provided.
         '''
-        command = __shell_injection_prevention__(command)
         self.log(command)
         
         result = subprocess.run(command, shell=True, cwd=self.cwd, stdout=subprocess.PIPE)

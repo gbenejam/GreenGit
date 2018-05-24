@@ -26,12 +26,16 @@ CONST_COMMANDS = {
     'git-unpushed-commits': 'git log @{u}..HEAD --format=oneline --reverse',
     'git-push': 'git push origin {sha}:{branch}',
     'git-change-dates': 'git filter-branch --env-filter ',
+    'git-stash': 'git stash -u',
+    'git-stash-pop': 'git stash pop',
+    'git-folder-path': 'git rev-parse --git-dir',
     # general bash commands
-    'get-date': 'date -R'
+    'get-date': 'date -R',
+    'remove-refs-original-folder': 'rm -rf {path}/refs/original'
 }
 
 BASH_ENV_FILTER = '\'export GIT_AUTHOR_DATE="{date}"\n' \
-    + 'export GIT_COMMITTER_DATE="{date}"\' -- {origin_head}..HEAD'
+    + 'export GIT_COMMITTER_DATE="{date}"\' -f -- {origin_head}..HEAD'
 
     
 # Functions to check if the push is needed
@@ -96,7 +100,7 @@ def get_commit_to_push(command_executer, commits_num):
     Function that, checking the number_of_commits needed, picks a commit SHA from the
     results of the corresponding git log command.
     '''
-    result = command_executer.execute(CONST_COMMANDS['get-unpushed-commits'])
+    result = command_executer.execute(CONST_COMMANDS['git-unpushed-commits'])
     commits = result.split('\n')
     
     if commits_num < len(commits):
@@ -116,13 +120,30 @@ def push_commits(command_executer, commits_num, branch_name):
     command_executer.execute(command)
 
 
-def change_commit_dates(command_executer):
+def change_commit_dates(command_executer, branch, current_date):
     '''
     This function gets all the unpushed commits and changes their date to the actual one.
     This is needed so that GitHub paints the green commit in today's day (it paints the
     box based on commit's date instead of push date).
     '''
-    pass
+    origin_head_sha = get_origin_head_sha(command_executer, branch)
+    
+    change_date_command = CONST_COMMANDS['git-change-dates'] + BASH_ENV_FILTER
+    change_date_command = change_date_command.format(date=current_date, \
+        origin_head=origin_head_sha)
+
+    # first the .git/refs/original folder needs to be deleted to run the filter-branch
+    git_folder_path = command_executer.execute(CONST_COMMANDS['git-folder-path'])
+    remove_folder_command = CONST_COMMANDS['remove-refs-original-folder'].format(
+        path=git_folder_path)
+    command_executer.execute(remove_folder_command)
+
+    # the command can not be executed if there are unstaged changes, so first stash them
+    command_executer.execute(CONST_COMMANDS['git-stash'])
+    # then run the command to change the date of unpushed commits
+    command_executer.execute(change_date_command)
+    # and finally, pop the recently saved stash to leave the working directory as it was
+    command_executer.execute(CONST_COMMANDS['git-stash-pop'])
 
 
 # Main method
@@ -144,6 +165,10 @@ def execute_script():
         # command_executer.execute(script_options.get_cron_expression)
         print('Execute cron: {}'.format(script_options.get_cron_expression))
 
+    # log execution
+    print('Executing greenGit.py...')
+    current_time = command_executer.execute(CONST_COMMANDS['get-date'])
+    
     if is_git_repo(command_executer):
         # get the current branch of the project
         branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
@@ -156,9 +181,8 @@ def execute_script():
             Each push will do this, so every commit goes into a different box in the
             calendar.
             '''
-            # get_date_command = CONST_COMMANDS['git-date']
-            # push_commits(command_executer, script_options.commits_number, branch)
-            print('Do push')
+            change_commit_dates(command_executer, branch, current_time)            
+            push_commits(command_executer, script_options.commits_number, branch)
 
 
 # Script start
