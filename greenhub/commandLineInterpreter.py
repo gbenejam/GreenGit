@@ -4,30 +4,13 @@ passed to the greenGit.py script.
 '''
 
 
-green_git_usage_str = ''
-
-
-def __get_parameter__(parameter_number, parameter_list):
-    '''
-    Given a list (parameter_list), returns the object at position 'parameter_number'. 
-    It makes sure that if the index is out of bounds the object returned will be properly
-    default initialized.
-
-    project_path is default initialized to '.'.
-    commits_number is default initialized to 1.
-    Not specified cron parameters (minute, hour, ...) are initialized to '*'.
-    '''
-    if parameter_number >= len(parameter_list):
-        # there is no parameter set and we need to initialize it
-        if parameter_number == 1:
-            return '.'
-        elif parameter_number == 2:
-            return 1
-        else:
-            return '*'
-
-    return parameter_list[parameter_number]
-
+USAGE = 'greenhub [options] [cron_expression]
+Options:
+[-v] : verbose. Print all the commands that the program is executing to the standard output.
+[-h] : help. Print this usage string.
+[-n commits_number] : number of commits. Default is 1 commit per day.
+[-p path] : path of the project to be pushed. Default is \'.\'.
+Separate the options with spaces. The options that need extra parameters have to be followed by them.'
 
 
 class CommandLineInterpreter():
@@ -36,6 +19,8 @@ class CommandLineInterpreter():
     is listed in the object as a separate parameter and the __str__ method returns the command
     entered to the command line.
     '''
+    options = {'v': False, 'n': 1, 'p': '.', 'c': None}
+    
     cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} {5} {6}") | crontab -'
 
     def __init__(self, parameter_list):
@@ -45,36 +30,86 @@ class CommandLineInterpreter():
         Those optional parameters that are not specified in the list will be initialized with a
         default value if needed.
         '''
-        # path of the script
-        self.project_path = __get_parameter__(1, parameter_list)
+        # First parameter is at position 1
+        index = 1
+        while index < len(parameter_list):
+            if arg[0] == '-':
+                # option parameter
+                if arg[1] in options:
+                    index = __get_parameter_value__(self, arg[1], index + 1, parameter_list)
+                elif arg[1] == 'h':
+                    print(USAGE)
+                    raise Exception('Abort program')
+                else:
+                    print('Parameter not valid')
+                    print(USAGE)
+                    raise Exception('Abort program')
+            else:
+                # We should not enter here, as the parameters without dash get read in the
+                # __get_parameter_value__ method
+                print('Error passing arguments')
+                print(USAGE)
+                raise Exception('Abort program')
         
-        # number of commits to be done
-        try:
-            self.commits_number = int(__get_parameter__(2, parameter_list))
-        except:
-            print('Error parsing int')
-            raise Exception('Abort program')
-        
-        # get cron parameters
-        self.minute = __get_parameter__(3, parameter_list)
-        self.hour = __get_parameter__(4, parameter_list)
-        self.month_day = __get_parameter__(5, parameter_list)
-        self.month = __get_parameter__(6, parameter_list)
-        self.week_day = __get_parameter__(7, parameter_list)
-
         # boolean to know if cron expression needs to be executed or not
-        self.execute_cron = len(parameter_list) > 3
+        self.execute_cron = self.options['c'] != None
 
-    def __str__(self):
+    def __get_parameter_value__(self, arg_option, arg_value_index, parameter_list):
         '''
-        String representation of the command executed.
+        This method fills the corresponding 'options' dictionary entry with the value
+        read from the arguments passed to the script.
+        It returns the index to the next parameter to be read from the parameter list.
         '''
-        return f'python3 {self.project_path} {self.commits_number} {self.minute} {self.hour} '\
-            + f'{self.month_day} {self.month} {self.week_day}'
+        if arg_option == 'v':
+            self.options['v'] = True
+        elif arg_option == 'c':
+            return __fill_cron_dict__(self, arg_value_index, parameter_list)
+        elif arg_option == 'n':
+            try:
+                self.options['n'] = int(parameter_list[arg_value_index])
+            except:
+                print('Error parsing int')
+                print(USAGE)
+                raise Exception('Abort program')
+            arg_value_index += 1
+        elif arg_option = 'p':
+            self.options['p'] = parameter_list[arg_value_index]
+            arg_value_index += 1
 
+        return arg_value_index
+
+    def __fill_cron_dict__(self, arg_value_index, parameter_list):
+        '''
+        Fill the cron option in the dictionary with another dictionary with all the
+        values for the crontab command. Default initialize those that are not set by
+        the user to '*'.
+        '''
+        pass
+    
     def get_cron_expression(self):
+        '''
+        Getter for the cron expression entered as optional arguments.
+        '''
         return CommandLineInterpreter.cron_expression.format(
             self.minute, self.hour, self.month_day, self.month, self.week_day,
             self.project_path, self.commits_number)
+
+    def get_project_path(self):
+        '''
+        Getter for the project path in where the script will execute its commands.
+        '''
+        return options['p']
+
+    def get_commits_number(self):
+        '''
+        Getter for the number of commits to be pushed each day.
+        '''
+        return options['n']
+
+    def is_verbose(self):
+        '''
+        Getter to check if the user marked the 'verbose' option or not.
+        '''
+        return options['v']
 
 
