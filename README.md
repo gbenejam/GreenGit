@@ -1,4 +1,4 @@
-# GreenGit
+# GreenHub
 Useful tool for MacOS that uses the Commit of the Day approach to help you keep your Github green
 
 
