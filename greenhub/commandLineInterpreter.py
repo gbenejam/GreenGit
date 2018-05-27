@@ -19,9 +19,11 @@ class CommandLineInterpreter():
     is listed in the object as a separate parameter and the __str__ method returns the command
     entered to the command line.
     '''
-    options = {'v': False, 'n': 1, 'p': '.', 'c': None}
+    options = {'v': False, 'n': 1, 'p': '.', 'c': {}}
     
     cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} {5} {6}") | crontab -'
+
+    cron_parameters = ('minute', 'hour', 'month_day', 'month', 'week_day')
 
     def __init__(self, parameter_list):
         '''
@@ -84,7 +86,24 @@ class CommandLineInterpreter():
         values for the crontab command. Default initialize those that are not set by
         the user to '*'.
         '''
-        pass
+        parameter = parameter_list[arg_value_index]
+        index = 0
+        
+        while arg_value_index < len(parameter_list) and parameter[0] != '-':
+            if index < len(cron_parameters):
+                key = cron_parameters[index]
+                value = parameter_list[arg_value_index]
+                self.options['c'][key] = value
+            else:
+                # if there is still a parameter left and doesn't begin with '-' the __init__
+                # method will detect and handle the error
+                break
+            
+            # increment both indexes
+            index += 1
+            arg_value_index += 1
+
+        return arg_value_index
     
     def get_cron_expression(self):
         '''

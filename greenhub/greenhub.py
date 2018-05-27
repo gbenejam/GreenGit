@@ -192,5 +192,8 @@ def execute_script():
 # Script start
 
 if __name__ == '__main__':
-    execute_script()
+    try:
+        execute_script()
+    except:
+        pass
 
