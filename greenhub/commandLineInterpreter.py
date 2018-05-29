@@ -36,10 +36,11 @@ class CommandLineInterpreter():
         # First parameter is at position 1
         index = 1
         while index < len(parameter_list):
+            arg = parameter_list[index]
             if arg[0] == '-':
                 # option parameter
-                if arg[1] in options:
-                    index = __get_parameter_value__(self, arg[1], index + 1, parameter_list)
+                if arg[1] in self.options:
+                    index = self.__get_parameter_value__(arg[1], index + 1, parameter_list)
                 elif arg[1] == 'h':
                     print(USAGE)
                     raise Exception('Abort program')
