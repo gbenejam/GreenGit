@@ -17,6 +17,7 @@ class CommandExecuter():
         '''
         Nothing to do here. This class is just a wrapper for some methods.
         '''
+        print('inside command executer init')
         self.cwd = cwd
         self.verbose = verbose
 

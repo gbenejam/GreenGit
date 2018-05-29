@@ -4,13 +4,13 @@ passed to the greenGit.py script.
 '''
 
 
-USAGE = 'greenhub [options] [cron_expression]
-Options:
-[-v] : verbose. Print all the commands that the program is executing to the standard output.
-[-h] : help. Print this usage string.
-[-n commits_number] : number of commits. Default is 1 commit per day.
-[-p path] : path of the project to be pushed. Default is \'.\'.
-Separate the options with spaces. The options that need extra parameters have to be followed by them.'
+USAGE = 'greenhub [options] [-c cron_expression]' \
+'Options:' \
+'[-v] : verbose. Print all the commands that the program is executing to the standard output.' \
+'[-h] : help. Print this usage string.' \
+'[-n commits_number] : number of commits. Default is 1 commit per day.' \
+'[-p path] : path of the project to be pushed. Default is \'.\'.' \
+'Separate the options with spaces. The options that need extra parameters have to be followed by them.'
 
 
 class CommandLineInterpreter():
@@ -21,7 +21,8 @@ class CommandLineInterpreter():
     '''
     options = {'v': False, 'n': 1, 'p': '.', 'c': {}}
     
-    cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} {5} {6}") | crontab -'
+    cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} greenhub {5} {6}")' +\
+                      ' | crontab -'
 
     cron_parameters = ('minute', 'hour', 'month_day', 'month', 'week_day')
 
@@ -54,7 +55,7 @@ class CommandLineInterpreter():
                 raise Exception('Abort program')
         
         # boolean to know if cron expression needs to be executed or not
-        self.execute_cron = self.options['c'] != None
+        self.execute_cron = len(self.options['c']) > 0
 
     def __get_parameter_value__(self, arg_option, arg_value_index, parameter_list):
         '''
@@ -74,7 +75,7 @@ class CommandLineInterpreter():
                 print(USAGE)
                 raise Exception('Abort program')
             arg_value_index += 1
-        elif arg_option = 'p':
+        elif arg_option == 'p':
             self.options['p'] = parameter_list[arg_value_index]
             arg_value_index += 1
 
@@ -110,25 +111,30 @@ class CommandLineInterpreter():
         Getter for the cron expression entered as optional arguments.
         '''
         return CommandLineInterpreter.cron_expression.format(
-            self.minute, self.hour, self.month_day, self.month, self.week_day,
-            self.project_path, self.commits_number)
+            self.options['c'][cron_parameters[0]],
+            self.options['c'][cron_parameters[1]],
+            self.options['c'][cron_parameters[2]],
+            self.options['c'][cron_parameters[3]],
+            self.options['c'][cron_parameters[4]],
+            self.get_project_path(),
+            self.get_commits_number())
 
     def get_project_path(self):
         '''
         Getter for the project path in where the script will execute its commands.
         '''
-        return options['p']
+        return self.options['p']
 
     def get_commits_number(self):
         '''
         Getter for the number of commits to be pushed each day.
         '''
-        return options['n']
+        return self.options['n']
 
     def is_verbose(self):
         '''
         Getter to check if the user marked the 'verbose' option or not.
         '''
-        return options['v']
+        return self.options['v']
 
 

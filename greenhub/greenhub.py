@@ -9,7 +9,6 @@ It can also be configured to make the pushes automatically at a given time.
 # Imports
 
 import sys
-import os
 
 # Custom package imports
 
@@ -158,16 +157,20 @@ def execute_script():
     pushing to the remote repository the specified number of commits.
     '''
 
+    print('Starting...')
     # get command line options and create CommandLineInterpreter object
     script_options = CommandLineInterpreter(sys.argv)
+    print('CommandLineInterpreter initialized')
     # initialize CommandExecuter with the project directory as cwd
-    command_executer = CommandExecuter(script_options.project_path, True)
+    command_executer = CommandExecuter(script_options.get_project_path(),
+                                       script_options.is_verbose())
 
+    print('Objects initialized')
     if script_options.execute_cron:
         print('WARNING: To use cron feature you need to leave the computer on.')
         print('You also need to have the SSH feature enabled to access the remote repository')
         # command_executer.execute(script_options.get_cron_expression)
-        print('Execute cron: {}'.format(script_options.get_cron_expression))
+        print('Execute cron: {}'.format(script_options.get_cron_expression()))
 
     # log execution
     print('Executing greenGit.py...')
@@ -177,7 +180,7 @@ def execute_script():
         # get the current branch of the project
         branch = command_executer.execute(CONST_COMMANDS['git-branch-name'])
 
-        if is_push_needed(command_executer, script_options.commits_number, branch):
+        if is_push_needed(command_executer, script_options.get_commits_number(), branch):
             '''
             GitHub paints the colors in the calendar of commits based on the date of the
             commit, so we need to change the date of the commits that are going to be
@@ -186,14 +189,22 @@ def execute_script():
             calendar.
             '''
             change_commit_dates(command_executer, branch, current_time)            
-            push_commits(command_executer, script_options.commits_number, branch)
+            #push_commits(command_executer, script_options.get_commits_number(), branch)
+            print('Test command line interpreter: ')
+            print('Verbose: {}'.format(script_options.is_verbose()))
+            print('Commits number: {}'.format(script_options.get_commits_number()))
+            print('Project path: {}'.format(script_options.get_project_path()))
 
 
 # Script start
 
 if __name__ == '__main__':
+    execute_script()
+'''
     try:
         execute_script()
-    except:
-        pass
+    except Exception:
+        print('Closing program...')
+        print(sys.exc_info()[0])
+'''
 
