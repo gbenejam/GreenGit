@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="greenhub",
-    version="0.0.1",
+    version="0.0.2",
     author="Alvaro Mateo",
     author_email="alvaromateo9@gmail.com",
     description="Tool that manages your local commits to push a few each day instead of all at the same time.",
@@ -15,5 +15,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=(
         "Programming Language :: Python :: 3"
-    )
+    ),
+    entry_points={
+        'console_scripts': [
+            'greenhub=greenhub:execute_script'
+        ]
+    }
 )
