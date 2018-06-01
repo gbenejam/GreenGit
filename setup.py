@@ -18,7 +18,7 @@ setuptools.setup(
     ),
     entry_points={
         'console_scripts': [
-            'greenhub=greenhub:execute_script'
+            'greenhub=greenhub.greenhub:execute_script'
         ]
     }
 )

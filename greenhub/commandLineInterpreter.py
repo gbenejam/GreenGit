@@ -33,6 +33,8 @@ class CommandLineInterpreter():
         Those optional parameters that are not specified in the list will be initialized with a
         default value if needed.
         '''
+        # Variable to control if the program must end due to wrong parameters
+        self.exit = False
         # First parameter is at position 1
         index = 1
         while index < len(parameter_list):
@@ -43,11 +45,11 @@ class CommandLineInterpreter():
                     index = self.__get_parameter_value__(arg[1], index + 1, parameter_list)
                 elif arg[1] == 'h':
                     print(USAGE)
-                    raise Exception('Abort program')
+                    self.exit = True
                 else:
                     print('Parameter not valid')
                     print(USAGE)
-                    raise Exception('Abort program')
+                    self.exit = True
             else:
                 # We should not enter here, as the parameters without dash get read in the
                 # __get_parameter_value__ method

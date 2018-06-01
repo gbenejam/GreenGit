@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 '''
 This script pushes just the first unpushed commit to origin.
@@ -12,8 +12,8 @@ import sys
 
 # Custom package imports
 
-from commandExecuter import CommandExecuter
-from commandLineInterpreter import CommandLineInterpreter
+from greenhub.commandExecuter import CommandExecuter
+from greenhub.commandLineInterpreter import CommandLineInterpreter
 
 
 # Global const variables
@@ -156,16 +156,15 @@ def execute_script():
     Then it takes care of getting all the information needed from git commands and of
     pushing to the remote repository the specified number of commits.
     '''
-
-    print('Starting...')
     # get command line options and create CommandLineInterpreter object
     script_options = CommandLineInterpreter(sys.argv)
-    print('CommandLineInterpreter initialized')
+    if script_options.exit:
+        return None
+    
     # initialize CommandExecuter with the project directory as cwd
     command_executer = CommandExecuter(script_options.get_project_path(),
                                        script_options.is_verbose())
 
-    print('Objects initialized')
     if script_options.execute_cron:
         print('WARNING: To use cron feature you need to leave the computer on.')
         print('You also need to have the SSH feature enabled to access the remote repository')
@@ -173,7 +172,6 @@ def execute_script():
         print('Execute cron: {}'.format(script_options.get_cron_expression()))
 
     # log execution
-    print('Executing greenGit.py...')
     current_time = command_executer.execute(CONST_COMMANDS['get-date'])
     
     if is_git_repo(command_executer):
@@ -200,11 +198,4 @@ def execute_script():
 
 if __name__ == '__main__':
     execute_script()
-'''
-    try:
-        execute_script()
-    except Exception:
-        print('Closing program...')
-        print(sys.exc_info()[0])
-'''
 
