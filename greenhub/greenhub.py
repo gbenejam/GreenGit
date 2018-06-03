@@ -11,9 +11,12 @@ It can also be configured to make the pushes automatically at a given time.
 import sys
 
 # Custom package imports
-
-from .commandExecuter import CommandExecuter
-from .commandLineInterpreter import CommandLineInterpreter
+if __name__ == '__main__':
+    from commandExecuter import CommandExecuter
+    from commandLineInterpreter import CommandLineInterpreter
+else:
+    from .commandExecuter import CommandExecuter
+    from .commandLineInterpreter import CommandLineInterpreter
 
 
 # Global const variables

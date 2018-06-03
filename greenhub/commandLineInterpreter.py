@@ -4,13 +4,13 @@ passed to the greenGit.py script.
 '''
 
 
-USAGE = 'greenhub [options] [-c cron_expression]' \
-'Options:' \
-'[-v] : verbose. Print all the commands that the program is executing to the standard output.' \
-'[-h] : help. Print this usage string.' \
-'[-n commits_number] : number of commits. Default is 1 commit per day.' \
-'[-p path] : path of the project to be pushed. Default is \'.\'.' \
-'Separate the options with spaces. The options that need extra parameters have to be followed by them.'
+USAGE = 'greenhub [options] [-c cron_expression]\n' \
+'Options:\n' \
+'[-v] : verbose. Print all the commands that the program is executing to the standard output.\n' \
+'[-h] : help. Print this usage string.\n' \
+'[-n commits_number] : number of commits. Default is 1 commit per day.\n' \
+'[-p path] : path of the project to be pushed. Default is \'.\'.\n' \
+'Separate the options with spaces. The options that need extra parameters have to be followed by them.\n'
 
 
 class CommandLineInterpreter():
@@ -46,10 +46,12 @@ class CommandLineInterpreter():
                 elif arg[1] == 'h':
                     print(USAGE)
                     self.exit = True
+                    return
                 else:
                     print('Parameter not valid')
                     print(USAGE)
                     self.exit = True
+                    return
             else:
                 # We should not enter here, as the parameters without dash get read in the
                 # __get_parameter_value__ method
