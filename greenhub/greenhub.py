@@ -12,8 +12,8 @@ import sys
 
 # Custom package imports
 
-from greenhub.commandExecuter import CommandExecuter
-from greenhub.commandLineInterpreter import CommandLineInterpreter
+from .commandExecuter import CommandExecuter
+from .commandLineInterpreter import CommandLineInterpreter
 
 
 # Global const variables
@@ -159,7 +159,7 @@ def execute_script():
     # get command line options and create CommandLineInterpreter object
     script_options = CommandLineInterpreter(sys.argv)
     if script_options.exit:
-        return None
+        return
     
     # initialize CommandExecuter with the project directory as cwd
     command_executer = CommandExecuter(script_options.get_project_path(),
