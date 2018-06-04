@@ -5,6 +5,7 @@ passed to the greenGit.py script.
 
 
 USAGE = 'greenhub [options] [-c cron_expression]\n' \
+'If you need to pass \'*\' as an argument to cron put it between quotes. \n' \
 'Options:\n' \
 '[-v] : verbose. Print all the commands that the program is executing to the standard output.\n' \
 '[-h] : help. Print this usage string.\n' \
@@ -48,14 +49,13 @@ class CommandLineInterpreter():
                     self.exit = True
                     return
                 else:
-                    print('Parameter not valid')
+                    print('Parameter not valid ({})'.format(arg))
                     print(USAGE)
-                    self.exit = True
-                    return
+                    raise Exception('Abort program')
             else:
                 # We should not enter here, as the parameters without dash get read in the
                 # __get_parameter_value__ method
-                print('Error passing arguments')
+                print('Error passing arguments ({})'.format(arg))
                 print(USAGE)
                 raise Exception('Abort program')
         
@@ -71,7 +71,7 @@ class CommandLineInterpreter():
         if arg_option == 'v':
             self.options['v'] = True
         elif arg_option == 'c':
-            return __fill_cron_dict__(self, arg_value_index, parameter_list)
+            return self.__fill_cron_dict__(arg_value_index, parameter_list)
         elif arg_option == 'n':
             try:
                 self.options['n'] = int(parameter_list[arg_value_index])
@@ -96,8 +96,8 @@ class CommandLineInterpreter():
         index = 0
         
         while arg_value_index < len(parameter_list) and parameter[0] != '-':
-            if index < len(cron_parameters):
-                key = cron_parameters[index]
+            if index < len(self.cron_parameters):
+                key = self.cron_parameters[index]
                 value = parameter_list[arg_value_index]
                 self.options['c'][key] = value
             else:
@@ -109,6 +109,13 @@ class CommandLineInterpreter():
             index += 1
             arg_value_index += 1
 
+        # default initialize the rest of the cron expression with '*'
+        while index < len(self.cron_parameters):
+            key = self.cron_parameters[index]
+            value = '*'
+            self.options['c'][key] = value
+            index += 1
+        
         return arg_value_index
     
     def get_cron_expression(self):
@@ -116,11 +123,11 @@ class CommandLineInterpreter():
         Getter for the cron expression entered as optional arguments.
         '''
         return CommandLineInterpreter.cron_expression.format(
-            self.options['c'][cron_parameters[0]],
-            self.options['c'][cron_parameters[1]],
-            self.options['c'][cron_parameters[2]],
-            self.options['c'][cron_parameters[3]],
-            self.options['c'][cron_parameters[4]],
+            self.options['c'][self.cron_parameters[0]],
+            self.options['c'][self.cron_parameters[1]],
+            self.options['c'][self.cron_parameters[2]],
+            self.options['c'][self.cron_parameters[3]],
+            self.options['c'][self.cron_parameters[4]],
             self.get_project_path(),
             self.get_commits_number())
 

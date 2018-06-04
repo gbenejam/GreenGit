@@ -169,8 +169,10 @@ def execute_script():
                                        script_options.is_verbose())
 
     if script_options.execute_cron:
-        print('WARNING: To use cron feature you need to leave the computer on.')
-        print('You also need to have the SSH feature enabled to access the remote repository')
+        print('WARNING:')
+        print('You need to have the greenhub package installed (pip install).')
+        print('To use cron feature you need to leave the computer on.')
+        print('You also need to have the SSH feature enabled to access the remote repository.')
         # command_executer.execute(script_options.get_cron_expression)
         print('Execute cron: {}'.format(script_options.get_cron_expression()))
 
