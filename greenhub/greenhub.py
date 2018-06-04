@@ -124,7 +124,7 @@ def push_commits(command_executer, commits_num, branch_name):
     command_executer.execute(command)
 
 
-def change_commit_dates(command_executer, branch, current_date):
+def change_commit_dates(command_executer, branch, current_date, git_folder_path):
     '''
     This function gets all the unpushed commits and changes their date to the actual one.
     This is needed so that GitHub paints the green commit in today's day (it paints the
@@ -137,7 +137,6 @@ def change_commit_dates(command_executer, branch, current_date):
         origin_head=origin_head_sha)
 
     # first the .git/refs/original folder needs to be deleted to run the filter-branch
-    git_folder_path = command_executer.execute(CONST_COMMANDS['git-folder-path'])
     remove_folder_command = CONST_COMMANDS['remove-refs-original-folder'].format(
         path=git_folder_path)
     command_executer.execute(remove_folder_command)
@@ -145,7 +144,8 @@ def change_commit_dates(command_executer, branch, current_date):
     # the command can not be executed if there are unstaged changes, so first stash them
     command_executer.execute(CONST_COMMANDS['git-stash'])
     # then run the command to change the date of unpushed commits
-    command_executer.execute(change_date_command)
+    # the command needs to be run from the top level of the working tree
+    command_executer.execute(change_date_command, None, git_folder_path[0:-4])
     # and finally, pop the recently saved stash to leave the working directory as it was
     command_executer.execute(CONST_COMMANDS['git-stash-pop'])
 
@@ -168,13 +168,18 @@ def execute_script():
     command_executer = CommandExecuter(script_options.get_project_path(),
                                        script_options.is_verbose())
 
+    # path to the .git folder
+    git_folder_path = command_executer.execute(CONST_COMMANDS['git-folder-path'])
+    
     if script_options.execute_cron:
         print('WARNING:')
-        print('You need to have the greenhub package installed (pip install).')
         print('To use cron feature you need to leave the computer on.')
         print('You also need to have the SSH feature enabled to access the remote repository.')
+
+        # the path will end with .../.git but we want the parent folder, so up to -4 index
+        absolute_path = git_folder_path[0:-4]
         # command_executer.execute(script_options.get_cron_expression)
-        print('Execute cron: {}'.format(script_options.get_cron_expression()))
+        print('Execute cron: {}'.format(script_options.get_cron_expression(absolute_path)))
 
     # log execution
     current_time = command_executer.execute(CONST_COMMANDS['get-date'])
@@ -191,7 +196,7 @@ def execute_script():
             Each push will do this, so every commit goes into a different box in the
             calendar.
             '''
-            change_commit_dates(command_executer, branch, current_time)            
+            change_commit_dates(command_executer, branch, current_time, git_folder_path)
             #push_commits(command_executer, script_options.get_commits_number(), branch)
             print('Test command line interpreter: ')
             print('Verbose: {}'.format(script_options.is_verbose()))

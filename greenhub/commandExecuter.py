@@ -28,14 +28,15 @@ class CommandExecuter():
         if self.verbose:
             print(text)
             
-    def execute(self, command, callback=None):
+    def execute(self, command, callback=None, directory=None):
         '''
         This method gets the command to execute and runs it.
         @return the returncode of the command or the result of the callback if provided.
         '''
         self.log(command)
-        
-        result = subprocess.run(command, shell=True, cwd=self.cwd, stdout=subprocess.PIPE)
+
+        working_dir = directory if directory is not None else self.cwd
+        result = subprocess.run(command, shell=True, cwd=working_dir, stdout=subprocess.PIPE)
 
         # Decode the result so that it is readable
         output = result.stdout.decode('utf-8')

@@ -27,7 +27,7 @@ class CommandLineInterpreter():
 
     cron_parameters = ('minute', 'hour', 'month_day', 'month', 'week_day')
 
-    def __init__(self, parameter_list):
+    def __init__(self, parameter_list, path='.'):
         '''
         Initializes the object with the parameters passed as argument.
         parameter_list is the list of parameters received through the command line execution.
@@ -38,6 +38,7 @@ class CommandLineInterpreter():
         self.exit = False
         # First parameter is at position 1
         index = 1
+        
         while index < len(parameter_list):
             arg = parameter_list[index]
             if arg[0] == '-':
@@ -118,7 +119,7 @@ class CommandLineInterpreter():
         
         return arg_value_index
     
-    def get_cron_expression(self):
+    def get_cron_expression(self, absolute_project_path):
         '''
         Getter for the cron expression entered as optional arguments.
         '''
@@ -128,7 +129,7 @@ class CommandLineInterpreter():
             self.options['c'][self.cron_parameters[2]],
             self.options['c'][self.cron_parameters[3]],
             self.options['c'][self.cron_parameters[4]],
-            self.get_project_path(),
+            absolute_project_path,
             self.get_commits_number())
 
     def get_project_path(self):
