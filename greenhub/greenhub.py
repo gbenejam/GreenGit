@@ -185,7 +185,6 @@ def execute_script():
         command_executer.execute(script_options.get_cron_expression(
             absolute_path, greenhub_path))
         return
-        #print('Execute cron: {}'.format(script_options.get_cron_expression(absolute_path)))
     
     if is_git_repo(command_executer):
         # get the current branch of the project
@@ -200,7 +199,7 @@ def execute_script():
             calendar.
             '''
             change_commit_dates(command_executer, branch, current_time, git_folder_path)
-            #push_commits(command_executer, script_options.get_commits_number(), branch)
+            push_commits(command_executer, script_options.get_commits_number(), branch)
 
 
 # Script start
