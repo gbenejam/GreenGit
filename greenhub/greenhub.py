@@ -32,10 +32,11 @@ CONST_COMMANDS = {
     'git-change-dates': 'git filter-branch --env-filter ',
     'git-stash': 'git stash -u',
     'git-stash-pop': 'git stash pop',
-    'git-folder-path': 'git rev-parse --git-dir',
+    'git-folder-path': 'git rev-parse --absolute-git-dir',
     # general bash commands
     'get-date': 'date -R',
-    'remove-refs-original-folder': 'rm -rf {path}/refs/original'
+    'remove-refs-original-folder': 'rm -rf {path}/refs/original',
+    'get-greenhub-path': 'which greenhub'
 }
 
 BASH_ENV_FILTER = '\'export GIT_AUTHOR_DATE="{date}"\n' \
@@ -108,9 +109,9 @@ def get_commit_to_push(command_executer, commits_num):
     commits = result.split('\n')
     
     if commits_num < len(commits):
-        chosen_commit = commits[commits_num]
+        chosen_commit = commits[commits_num - 1]
     else:
-        chosen_commit = commits[-1]
+        return None
 
     return get_sha(chosen_commit)
 
@@ -120,8 +121,10 @@ def push_commits(command_executer, commits_num, branch_name):
     repository.
     '''
     commit_sha = get_commit_to_push(command_executer, commits_num)
-    command = CONST_COMMANDS['git-push'].format(sha=commit_sha, branch=branch_name)
-    command_executer.execute(command)
+    
+    if commit_sha is not None:
+        command = CONST_COMMANDS['git-push'].format(sha=commit_sha, branch=branch_name)
+        command_executer.execute(command)
 
 
 def change_commit_dates(command_executer, branch, current_date, git_folder_path):
@@ -168,21 +171,21 @@ def execute_script():
     command_executer = CommandExecuter(script_options.get_project_path(),
                                        script_options.is_verbose())
 
-    # path to the .git folder
     git_folder_path = command_executer.execute(CONST_COMMANDS['git-folder-path'])
+    current_time = command_executer.execute(CONST_COMMANDS['get-date'])
     
     if script_options.execute_cron:
         print('WARNING:')
         print('To use cron feature you need to leave the computer on.')
         print('You also need to have the SSH feature enabled to access the remote repository.')
 
-        # the path will end with .../.git but we want the parent folder, so up to -4 index
+        # the path will end with /.git but we want the parent folder, so up to -4 index
         absolute_path = git_folder_path[0:-4]
-        # command_executer.execute(script_options.get_cron_expression)
-        print('Execute cron: {}'.format(script_options.get_cron_expression(absolute_path)))
-
-    # log execution
-    current_time = command_executer.execute(CONST_COMMANDS['get-date'])
+        greenhub_path = command_executer.execute(CONST_COMMANDS['get-greenhub-path'])
+        command_executer.execute(script_options.get_cron_expression(
+            absolute_path, greenhub_path))
+        return
+        #print('Execute cron: {}'.format(script_options.get_cron_expression(absolute_path)))
     
     if is_git_repo(command_executer):
         # get the current branch of the project
@@ -198,10 +201,6 @@ def execute_script():
             '''
             change_commit_dates(command_executer, branch, current_time, git_folder_path)
             #push_commits(command_executer, script_options.get_commits_number(), branch)
-            print('Test command line interpreter: ')
-            print('Verbose: {}'.format(script_options.is_verbose()))
-            print('Commits number: {}'.format(script_options.get_commits_number()))
-            print('Project path: {}'.format(script_options.get_project_path()))
 
 
 # Script start

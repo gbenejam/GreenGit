@@ -22,12 +22,12 @@ class CommandLineInterpreter():
     '''
     options = {'v': False, 'n': 1, 'p': '.', 'c': {}}
     
-    cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} greenhub {5} {6}")' +\
-                      ' | crontab -'
+    cron_expression = '(crontab -l 2>/dev/null; echo "{0} {1} {2} {3} {4} {5} ' +\
+        '-p {6} -n {7} -v >/tmp/greenhub.log 2>/tmp/greenhub_err.log") | crontab -'
 
     cron_parameters = ('minute', 'hour', 'month_day', 'month', 'week_day')
 
-    def __init__(self, parameter_list, path='.'):
+    def __init__(self, parameter_list):
         '''
         Initializes the object with the parameters passed as argument.
         parameter_list is the list of parameters received through the command line execution.
@@ -119,7 +119,7 @@ class CommandLineInterpreter():
         
         return arg_value_index
     
-    def get_cron_expression(self, absolute_project_path):
+    def get_cron_expression(self, absolute_project_path, python_path):
         '''
         Getter for the cron expression entered as optional arguments.
         '''
@@ -129,6 +129,7 @@ class CommandLineInterpreter():
             self.options['c'][self.cron_parameters[2]],
             self.options['c'][self.cron_parameters[3]],
             self.options['c'][self.cron_parameters[4]],
+            python_path,
             absolute_project_path,
             self.get_commits_number())
 
